@@ -41,7 +41,8 @@ jobs:
             docker push $dockerpath
   
   setup-cluster:   
-      executor: aws-eks/python3
+      docker:
+        - image: python:3.7.3-stretch
       steps:
         - checkout
         - aws-eks/install-aws-iam-authenticator:
