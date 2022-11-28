@@ -134,8 +134,8 @@ workflows:
       - docker-image:
           requires:
             - run-lint
-      - setup-cluster
-      requires:
+      - setup-cluster:
+          requires:
             - docker-image
       - create-deployment:
           requires:
