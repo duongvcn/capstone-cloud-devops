@@ -34,7 +34,7 @@ jobs:
       - run:
           name: Build and push to Docker Hub
           command: |
-            dockerpath=duongvcn/udacity:v1.0.0
+            dockerpath=duongvcn/udacity:${CIRCLE_WORKFLOW_ID:0:7}
             docker build -t $dockerpath .
             docker image ls
             echo "Docker ID and Image: $dockerpath"
