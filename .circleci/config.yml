@@ -71,7 +71,7 @@ jobs:
 # Setup cluster to fix the orb error while unzipping the eksctl package  
 # ----------------------------------------------------------------------------------------------------------------------------------------  
 
-    setup-cluster:   
+    us-east-1:   
       executor: aws-eks/python3
       parameters:
         cluster-name:
@@ -82,13 +82,6 @@ jobs:
         - checkout
         - aws-eks/install-aws-iam-authenticator:
             release-tag: ''
-        - run:
-          name: set-credential
-          command: |
-            aws configure set aws_access_key_id $AWS_ACCESS_KEY_ID
-            aws configure set aws_secret_access_key $AWS_SECRET_ACCESS_KEY
-            aws configure set aws_session_token $AWS_SESSION_TOKEN
-            aws configure set region $AWS_DEFAULT_REGION
         - run:
             name: Install the eksctl tool
             command: |
@@ -105,6 +98,10 @@ jobs:
               fi
               $SUDO mv eksctl_download/eksctl /usr/local/bin/
               rmdir eksctl_download
+              aws configure set aws_access_key_id $AWS_ACCESS_KEY_ID
+              aws configure set aws_secret_access_key $AWS_SECRET_ACCESS_KEY
+              aws configure set aws_session_token $AWS_SESSION_TOKEN
+              aws configure set region $AWS_DEFAULT_REGION
         - aws-eks/create-cluster:
             cluster-name: << parameters.cluster-name >>
             aws-region: $AWS_DEFAULT_REGION   
@@ -302,7 +299,7 @@ workflows:
           requires:
             - push-docker-image
               
-      - setup-cluster:
+      - us-east-1:
           cluster-name: eks-orb-capstone-project-deployment-${CIRCLE_WORKFLOW_ID:0:7}
           requires:
             - build-and-push-image-ecr
@@ -314,7 +311,7 @@ workflows:
           docker-image-name: "${AWS_ECR_URL}/eks_orb_capstone_project:latest"
           version-info: "${CIRCLE_SHA1}"
           requires:
-            - setup-cluster
+            - us-east-1
       
       - test-application:
           cluster-name: eks-orb-capstone-project-deployment-${CIRCLE_WORKFLOW_ID:0:7}
