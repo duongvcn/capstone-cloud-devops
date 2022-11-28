@@ -39,6 +39,33 @@ jobs:
             docker tag $dockerpath $dockerpath
             echo "Docker push Image: $dockerpath"
             docker push $dockerpath
+  
+  setup-cluster:   
+      executor: aws-eks/python3
+      steps:
+        - checkout
+        - aws-eks/install-aws-iam-authenticator:
+            release-tag: ''
+        - run:
+            name: Install the eksctl tool
+            command: |
+              if which eksctl > /dev/null; then
+              echo "eksctl is already installed"
+              exit 0
+              fi
+              mkdir -p eksctl_download
+              curl --silent --location --retry 5 "https://github.com/weaveworks/eksctl/releases/latest/download/eksctl_$(uname -s)_amd64.tar.gz" | tar xz -C eksctl_download
+              chmod +x eksctl_download/eksctl
+              SUDO=""
+              if [ $(id -u) -ne 0 ] && which sudo > /dev/null ; then
+              SUDO="sudo"
+              fi
+              $SUDO mv eksctl_download/eksctl /usr/local/bin/
+              rmdir eksctl_download
+        - aws-eks/create-cluster:
+            cluster-name: aws-devops-auto
+            aws-region: $AWS_DEFAULT_REGION   
+            node-type: t2.micro
 
   create-deployment:
     docker:
@@ -62,7 +89,7 @@ jobs:
             aws configure set region $AWS_DEFAULT_REGION
       - kubernetes/install-kubectl
       - aws-eks/update-kubeconfig-with-authenticator:
-          cluster-name: aws-devops2
+          cluster-name: aws-devops-auto
           install-kubectl: true
       - kubernetes/create-or-update-resource:
           resource-file-path: eks/deployment.yaml
@@ -74,11 +101,12 @@ jobs:
       - image: 'cimg/base:stable'
     steps:
       - aws-eks/update-kubeconfig-with-authenticator:
-          cluster-name: aws-devops2
+          cluster-name: aws-devops-auto
           install-kubectl: true
       - run:
           name: Wait for service to be ready
           command: |
+            kubectl get nodes
             kubectl get pods
             kubectl get services
 
@@ -88,7 +116,7 @@ jobs:
     steps:
       - checkout
       - aws-eks/update-kubeconfig-with-authenticator:
-          cluster-name: aws-devops2
+          cluster-name: aws-devops-auto
           install-kubectl: true
       - kubernetes/create-or-update-resource:
           resource-file-path: eks/loadbalancer.yaml
@@ -106,9 +134,12 @@ workflows:
       - docker-image:
           requires:
             - run-lint
+      - setup-cluster
+      requires:
+            - docker-image
       - create-deployment:
           requires:
-            - docker-image
+            - setup-cluster
           filters: 
             branches:
               only: [master]
