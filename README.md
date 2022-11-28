@@ -1,8 +1,9 @@
 # Capstone Cloud DevOps
 
 # Project Overview
-- This project user python for build and test static HTML project
-- User Circle CI for CI/CD
+- This is capstone project for Udacity devops course.
+- Deploy a static HTML project
+- Use Circle CI for CI/CD
 
 # Pipeline steps
   - checkout
