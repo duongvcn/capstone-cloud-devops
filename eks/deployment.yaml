@@ -15,7 +15,7 @@ spec:
       labels:
         app: udacity
     spec:
-      serviceAccountName: docker-sa
+      serviceAccountName: default
       containers:
       - name: udacity
         image: duongvcn/udacity:latest
