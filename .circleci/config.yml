@@ -83,6 +83,13 @@ jobs:
         - aws-eks/install-aws-iam-authenticator:
             release-tag: ''
         - run:
+          name: set-credential
+          command: |
+            aws configure set aws_access_key_id $AWS_ACCESS_KEY_ID
+            aws configure set aws_secret_access_key $AWS_SECRET_ACCESS_KEY
+            aws configure set aws_session_token $AWS_SESSION_TOKEN
+            aws configure set region $AWS_DEFAULT_REGION
+        - run:
             name: Install the eksctl tool
             command: |
               if which eksctl > /dev/null; then
@@ -102,8 +109,6 @@ jobs:
             cluster-name: << parameters.cluster-name >>
             aws-region: $AWS_DEFAULT_REGION   
             node-type: t2.micro
-            ssh-access: true
-            ssh-public-key: id_rsa.pub
  
 # ----------------------------------------------------------------------------------------------------------------------------------------
 # Deploy the application from AWS ECR image to AWS EKS
