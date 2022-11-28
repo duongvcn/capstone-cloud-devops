@@ -15,9 +15,8 @@ spec:
       labels:
         app: udacity
     spec:
-      serviceAccountName: docker-sa
       containers:
       - name: udacity
         image: duongvcn/udacity:latest
         ports:
-          - containerPort: 80
+          - containerPort: 8080

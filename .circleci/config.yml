@@ -72,7 +72,10 @@ jobs:
           resource-file-path: eks/deployment.yaml
           show-kubectl-command: true
           resource-name: deployment/udacity-deployment
-
+      - kubernetes/create-or-update-resource:
+          resource-file-path: eks/service.yaml
+          show-kubectl-command: true
+          resource-name: deployment/udacity-deployment
 workflows:
   default:
     jobs:
