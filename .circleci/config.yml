@@ -39,6 +39,7 @@ jobs:
             docker tag $dockerpath $dockerpath
             echo "Docker push Image: $dockerpath"
             docker push $dockerpath
+  
 
   create-deployment:
     docker:
@@ -62,7 +63,7 @@ jobs:
             aws configure set region $AWS_DEFAULT_REGION
       - kubernetes/install-kubectl
       - aws-eks/update-kubeconfig-with-authenticator:
-          cluster-name: aws-devops2
+          cluster-name: aws-cluster
           install-kubectl: true
       - kubernetes/create-or-update-resource:
           resource-file-path: eks/deployment.yaml
@@ -74,11 +75,12 @@ jobs:
       - image: 'cimg/base:stable'
     steps:
       - aws-eks/update-kubeconfig-with-authenticator:
-          cluster-name: aws-devops2
+          cluster-name: aws-cluster
           install-kubectl: true
       - run:
           name: Wait for service to be ready
           command: |
+            kubectl get nodes
             kubectl get pods
             kubectl get services
 
@@ -88,7 +90,7 @@ jobs:
     steps:
       - checkout
       - aws-eks/update-kubeconfig-with-authenticator:
-          cluster-name: aws-devops2
+          cluster-name: aws-cluster
           install-kubectl: true
       - kubernetes/create-or-update-resource:
           resource-file-path: eks/loadbalancer.yaml
