@@ -79,7 +79,6 @@ jobs:
         - aws-eks/update-kubeconfig-with-authenticator:
             cluster-name: aws-devops
             install-kubectl: true
-            aws-region: $AWS_DEFAULT_REGION
         - run:
             name: Wait for service to be ready
             command: |
@@ -91,12 +90,12 @@ jobs:
         steps:
           - checkout
           - aws-eks/update-kubeconfig-with-authenticator:
-              cluster-name: aws-devops
-              install-kubectl: true
-              aws-region: $AWS_DEFAULT_REGION
-          - kubernetes/create-or-update-resource:            
-              resource-file-path: "eks/loadbalancer.yaml"
-              resource-name: deployment/udacity-deployment       
+            cluster-name: aws-devops
+            install-kubectl: true
+          - kubernetes/create-or-update-resource:
+            resource-file-path: eks/loadbalancer.yaml
+            show-kubectl-command: true
+            resource-name: deployment/udacity-deployment         
           - run:
               name: Wait for LB to be ready
               command: |         
