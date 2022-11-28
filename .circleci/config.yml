@@ -71,7 +71,7 @@ jobs:
 # Setup cluster to fix the orb error while unzipping the eksctl package  
 # ----------------------------------------------------------------------------------------------------------------------------------------  
 
-    us-east-1:   
+    setup-cluster:   
       executor: aws-eks/python3
       parameters:
         cluster-name:
@@ -106,6 +106,8 @@ jobs:
             cluster-name: << parameters.cluster-name >>
             aws-region: $AWS_DEFAULT_REGION   
             node-type: t2.micro
+            ssh-access: true
+            ssh-public-key: id_rsa.pub
  
 # ----------------------------------------------------------------------------------------------------------------------------------------
 # Deploy the application from AWS ECR image to AWS EKS
@@ -299,7 +301,7 @@ workflows:
           requires:
             - push-docker-image
               
-      - us-east-1:
+      - setup-cluster:
           cluster-name: eks-orb-capstone-project-deployment-${CIRCLE_WORKFLOW_ID:0:7}
           requires:
             - build-and-push-image-ecr
@@ -311,7 +313,7 @@ workflows:
           docker-image-name: "${AWS_ECR_URL}/eks_orb_capstone_project:latest"
           version-info: "${CIRCLE_SHA1}"
           requires:
-            - us-east-1
+            - setup-cluster
       
       - test-application:
           cluster-name: eks-orb-capstone-project-deployment-${CIRCLE_WORKFLOW_ID:0:7}
