@@ -75,21 +75,6 @@ jobs:
         
   test-application:
       executor: aws-eks/python3
-      parameters:
-        cluster-name:
-          description: |
-            Name of the EKS cluster
-          type: string
-        aws-region:
-          description: |
-            AWS region
-          type: string
-          default: ""
-        expected-version-info:
-          description: |
-            Expected app version (this is used for testing that the
-            correct version has been deployed)
-          type: string
       steps:
         - aws-eks/update-kubeconfig-with-authenticator:
             cluster-name: aws-devops
@@ -103,20 +88,6 @@ jobs:
 
   set-loadbalancer:
         executor: aws-eks/python3
-        parameters:
-          cluster-name:
-            description: |
-              Name of the EKS cluster
-            type: string
-          aws-region:
-            description: |
-              AWS region
-            type: string
-            default: ""
-          expected-version-info:
-            description: |
-              Expected app version 
-            type: string
         steps:
           - checkout
           - aws-eks/update-kubeconfig-with-authenticator:
