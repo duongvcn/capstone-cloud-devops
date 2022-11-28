@@ -72,10 +72,37 @@ jobs:
           resource-file-path: eks/deployment.yaml
           show-kubectl-command: true
           resource-name: deployment/udacity-deployment
+        
+  test-application:
+    docker:
+      - image: 'cimg/base:stable'
+    steps:
+      - aws-eks/update-kubeconfig-with-authenticator:
+          cluster-name: aws-devops
+          install-kubectl: true
+      - run:
+          name: Wait for service to be ready
+          command: |
+            kubectl get pods
+            kubectl get services
+
+  set-loadbalancer:
+    docker:
+      - image: 'cimg/base:stable'
+    steps:
+      - checkout
+      - aws-eks/update-kubeconfig-with-authenticator:
+          cluster-name: aws-devops
+          install-kubectl: true
       - kubernetes/create-or-update-resource:
-          resource-file-path: eks/service.yaml
+          resource-file-path: eks/loadbalancer.yaml
           show-kubectl-command: true
-          resource-name: deployment/udacity-deployment
+          resource-name: deployment/udacity-deployment         
+      - run:
+          name: Wait for LB to be ready
+          command: |         
+            kubectl get service/udacity-svc
+
 workflows:
   default:
     jobs:
@@ -89,9 +116,9 @@ workflows:
           filters: 
             branches:
               only: [master]
-      - aws-eks/update-container-image:
-          cluster-name: aws-devops
-          container-image-updates: 'udacity=duongvcn/udacity:${CIRCLE_WORKFLOW_ID:0:7}'
-          resource-name: deployment/udacity-deployment
+      - test-application:
           requires:
             - create-deployment
+      - set-loadbalancer:
+          requires:
+            - test-application
