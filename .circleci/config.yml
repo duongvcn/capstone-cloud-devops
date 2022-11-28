@@ -121,7 +121,10 @@ jobs:
 workflows:
   default:
     jobs:
-      - build
+      - run-lint
+      - build:
+          requires:
+            - run-lint
       - docker-image:
           requires:
             - build
