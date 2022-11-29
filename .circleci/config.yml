@@ -92,7 +92,9 @@ jobs:
             name: Push image to ECR
             command: |
               aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 526532159872.dkr.ecr.us-east-1.amazonaws.com
-              
+              docker build -t duongvcn/udacity:latest .
+              docker tag duongvcn/udacity:latest 526532159872.dkr.ecr.us-east-1.amazonaws.com/udacity:latest
+              docker push 526532159872.dkr.ecr.us-east-1.amazonaws.com/udacity:latest
 
 # ----------------------------------------------------------------------------------------------------------------------------------------
 # Deploy the application from AWS ECR image to AWS EKS
@@ -107,7 +109,7 @@ jobs:
             install-kubectl: true
             aws-region: $AWS_DEFAULT_REGION
         - kubernetes/create-or-update-resource:
-            resource-file-path: "eks/deployment.yml"
+            resource-file-path: "eks/deployment.yaml"
             resource-name: deployment/udacity
 
     test-application:
@@ -136,7 +138,7 @@ jobs:
             install-kubectl: true
             aws-region: $AWS_DEFAULT_REGION
         - kubernetes/create-or-update-resource:
-            resource-file-path: "eks/loadbalancer.yml"
+            resource-file-path: "eks/loadbalancer.yaml"
             resource-name: deployment/udacity
         - run:
             name: Wait for LB to be ready
