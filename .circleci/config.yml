@@ -132,8 +132,8 @@ workflows:
       
       - aws-ecr/build-and-push-image:
             docker-login: true
-            dockerhub-password: $DOCKER_PASSWORD
-            dockerhub-username: $DOCKER_USERNAME
+            dockerhub-password: DOCKER_PASSWORD
+            dockerhub-username: DOCKER_USERNAME
             repo: udacity
             requires:
               - push-docker-image
