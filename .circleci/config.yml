@@ -140,7 +140,7 @@ jobs:
         - run:
             name: Wait for LB to be ready
             command: |         
-              kubectl get service/udacity-service-loadbalancer     
+              kubectl get service/udacity-svc     
 
 # ----------------------------------------------------------------------------------------------------------------------------------------
 # Start of Workflow
