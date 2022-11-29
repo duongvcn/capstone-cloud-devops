@@ -91,15 +91,15 @@ jobs:
               aws sts get-caller-identity
               aws eks update-kubeconfig --name devops-cluster --region us-east-1
               kubectl get nodes
-              kubectl apply -f ./eks/deployment.yaml
-              kubectl get pods
-              kubectl create -f ./eks/loadbalancer.yaml
-              sleep 20
+              #kubectl apply -f ./eks/deployment.yaml
+              #kubectl get pods
+              #kubectl create -f ./eks/loadbalancer.yaml
+              #sleep 20
               kubectl get svc
               Kubectl describe pod  | grep "image"
               kubectl run duongvcn-udacity-app --image=duongvcn/udacity:latest --port=8080
               kubectl get pods
-              ubectl port-forward duongvcn-udacity-app 8089:80
+              kubectl port-forward duongvcn-udacity-app 8089:80
 
 
 
