@@ -26,7 +26,7 @@ jobs:
               hadolint Dockerfile
               
 #  ------------------------------------------------------------------------------------------------------------------------------------------
-#  Build the Dockerimage for the application 
+#  Build and Push the Dockerimage for the application 
 #  ------------------------------------------------------------------------------------------------------------------------------------------
 
     build-docker-image:
@@ -39,25 +39,7 @@ jobs:
             version: 19.03.13
 
         - run:
-            name: Build Docker Image
-            command: |
-              export TAG=latest
-              export IMAGE_NAME=udacity
-              docker build -t duongvcn/$IMAGE_NAME:$TAG .
-              
-#  -------------------------------------------------------------------------------------------------------------------------------------------
-#  Push the Dockerimage into DockerHub
-#  ------------------------------------------------------------------------------------------------------------------------------------------
-
-    push-docker-image:
-      docker:
-        - image: circleci/node:13.8.0
-      steps:
-        - checkout
-        - setup_remote_docker:
-            version: 19.03.13
-        - run:
-            name: Push Docker Image to Docker Hub
+            name: Build and Push Docker Image
             command: |
               export TAG=latest
               export IMAGE_NAME=udacity
@@ -65,82 +47,36 @@ jobs:
               docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD 
               docker push duongvcn/$IMAGE_NAME:$TAG
 
-#  -------------------------------------------------------------------------------------------------------------------------------------------
-#  Push the Image into ECR
-#  ------------------------------------------------------------------------------------------------------------------------------------------
-    push-ecr-image:
+# ----------------------------------------------------------------------------------------------------------------------------------------
+# Deploy the application to EKS
+# ---------------------------------------------------------------------------------------------------------------------------------------
+    deploy-infrastructure:
       docker:
-        - image: 'cimg/base:stable'
+        - image: amazon/aws-cli
       steps:
         - checkout
         - run:
             name: Install dependencies
             command: |
-              sudo apt-get update
-              sudo apt-get install -y curl unzip
-              curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
-              unzip awscliv2.zip
-              sudo ./aws/install
+              yum install -y tar gzip
+              curl --silent --location "https://github.com/weaveworks/eksctl/releases/latest/download/eksctl_$(uname -s)_amd64.tar.gz" | tar xz -C /tmp
+              mv /tmp/eksctl /usr/local/bin
+              eksctl version
+              curl -LO https://storage.googleapis.com/kubernetes-release/release/v1.25.0/bin/linux/amd64/kubectl
+              chmod +x ./kubectl
+              mv ./kubectl /usr/local/bin/kubectl
         - run:
-            name: set-credential
+            name: Deploy application with kubernetes
             command: |
-              aws configure set aws_access_key_id $AWS_ACCESS_KEY_ID
-              aws configure set aws_secret_access_key $AWS_SECRET_ACCESS_KEY
-              aws configure set aws_session_token $AWS_SESSION_TOKEN
-              aws configure set region $AWS_DEFAULT_REGION
-        - run:
-            name: Push image to ECR
-            command: |
-              aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 526532159872.dkr.ecr.us-east-1.amazonaws.com
-              
-# ----------------------------------------------------------------------------------------------------------------------------------------
-# Deploy the application from AWS ECR image to AWS EKS
-# ---------------------------------------------------------------------------------------------------------------------------------------
-    deploy-application:
-      docker:
-      - image: 'cimg/python:3.10'
-      steps:
-        - checkout
-        - aws-eks/update-kubeconfig-with-authenticator:
-            cluster-name: udacity-cluster
-            install-kubectl: true
-            aws-region: $AWS_DEFAULT_REGION
-        - kubernetes/create-or-update-resource:
-            resource-file-path: "eks/deployment.yaml"
-            resource-name: deployment/udacity
-
-    test-application:
-      docker:
-      - image: 'cimg/python:3.10'
-      steps:
-        - aws-eks/update-kubeconfig-with-authenticator:
-            cluster-name: udacity-cluster
-            install-kubectl: true
-            aws-region: $AWS_DEFAULT_REGION
-        - run:
-            name: Wait for service to be ready
-            command: |
+              # eksctl create cluster --name cluster-devops --region=us-west-2
+              aws sts get-caller-identity
+              aws eks update-kubeconfig --name cluster-devops --region us-west-2
+              kubectl get nodes
+              kubectl apply -f ./eks/deployment.yaml
               kubectl get pods
-              kubectl get services
-# ----------------------------------------------------------------------------------------------------------------------------------  
-#  To create  LoadBalancer URL for the application as aws-eks orb is not creating LoadBalancer by default
-# ----------------------------------------------------------------------------------------------------------------------------------  
-    set-loadbalancer:
-      docker:
-      - image: 'cimg/python:3.10'
-      steps:
-        - checkout
-        - aws-eks/update-kubeconfig-with-authenticator:
-            cluster-name: udacity-cluster
-            install-kubectl: true
-            aws-region: $AWS_DEFAULT_REGION
-        - kubernetes/create-or-update-resource:
-            resource-file-path: "eks/loadbalancer.yaml"
-            resource-name: deployment/udacity
-        - run:
-            name: Wait for LB to be ready
-            command: |         
-              kubectl get service/udacity-svc     
+              kubectl create -f ./eks/loadbalancer.yaml
+              sleep 20
+              kubectl get svc
 
 # ----------------------------------------------------------------------------------------------------------------------------------------
 # Start of Workflow
@@ -154,23 +90,7 @@ workflows:
       - build-docker-image:
           requires:
             - run-lint
-      
-      - push-docker-image:
+            
+      - deploy-infrastructure:
           requires:
             - build-docker-image
-      
-      - push-ecr-image:
-          requires:
-            - push-docker-image
-
-      - deploy-application:
-            requires:
-              - push-ecr-image
-      
-      - test-application:
-          requires:
-            - deploy-application
-            
-      - set-loadbalancer:
-          requires:
-            - test-application
