@@ -135,8 +135,8 @@ workflows:
             dockerhub-password: DOCKER_PASSWORD
             dockerhub-username: DOCKER_USERNAME
             repo: udacity
-            region: $AWS_REGION
-            registry-id: $AWS_ECR_REGISTRY_ID
+            region: '${AWS_REGION}'
+            registry-id: AWS_ECR_REGISTRY_ID
             requires:
               - push-docker-image
 
