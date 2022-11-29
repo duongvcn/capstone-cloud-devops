@@ -97,7 +97,8 @@ jobs:
 # Deploy the application from AWS ECR image to AWS EKS
 # ---------------------------------------------------------------------------------------------------------------------------------------
     deploy-application:
-      executor: aws-eks/python3
+      docker:
+      - image: 'cimg/python:3.10'
       steps:
         - checkout
         - aws-eks/update-kubeconfig-with-authenticator:
@@ -109,7 +110,8 @@ jobs:
             resource-name: deployment/udacity
 
     test-application:
-      executor: aws-eks/python3
+      docker:
+      - image: 'cimg/python:3.10'
       steps:
         - aws-eks/update-kubeconfig-with-authenticator:
             cluster-name: udacity-cluster
@@ -124,7 +126,8 @@ jobs:
 #  To create  LoadBalancer URL for the application as aws-eks orb is not creating LoadBalancer by default
 # ----------------------------------------------------------------------------------------------------------------------------------  
     set-loadbalancer:
-      executor: aws-eks/python3
+      docker:
+      - image: 'cimg/python:3.10'
       steps:
         - checkout
         - aws-eks/update-kubeconfig-with-authenticator:
