@@ -2,9 +2,8 @@ version: 2.1
 
 orbs:
   aws-eks: circleci/aws-eks@1.1.0
-  aws-ecr: circleci/aws-ecr@7.2.0
+  aws-ecr: circleci/aws-ecr@8.1.3
   kubernetes: circleci/kubernetes@0.4.0
-  
 
 jobs:
 
@@ -44,7 +43,7 @@ jobs:
             name: Build Docker Image
             command: |
               export TAG=latest
-              export IMAGE_NAME=capstone
+              export IMAGE_NAME=udacity
               docker build -t duongvcn/$IMAGE_NAME:$TAG .
               
 #  -------------------------------------------------------------------------------------------------------------------------------------------
@@ -62,108 +61,33 @@ jobs:
             name: Push Docker Image to Docker Hub
             command: |
               export TAG=latest
-              export IMAGE_NAME=capstone
+              export IMAGE_NAME=udacity
               docker build -t duongvcn/$IMAGE_NAME:$TAG .
               docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD 
               docker push duongvcn/$IMAGE_NAME:$TAG
-              
-# ----------------------------------------------------------------------------------------------------------------------------------------
-# Setup cluster to fix the orb error while unzipping the eksctl package  
-# ----------------------------------------------------------------------------------------------------------------------------------------  
 
-    setup-cluster:   
-      executor: aws-eks/python3
-      parameters:
-        cluster-name:
-          description: |
-            Name of the EKS cluster
-          type: string
-      steps:
-        - checkout
-        - aws-eks/install-aws-iam-authenticator:
-            release-tag: ''
-        - run:
-            name: Install the eksctl tool
-            command: |
-              if which eksctl > /dev/null; then
-              echo "eksctl is already installed"
-              exit 0
-              fi
-              mkdir -p eksctl_download
-              curl --silent --location --retry 5 "https://github.com/weaveworks/eksctl/releases/latest/download/eksctl_$(uname -s)_amd64.tar.gz" | tar xz -C eksctl_download
-              chmod +x eksctl_download/eksctl
-              SUDO=""
-              if [ $(id -u) -ne 0 ] && which sudo > /dev/null ; then
-              SUDO="sudo"
-              fi
-              $SUDO mv eksctl_download/eksctl /usr/local/bin/
-              rmdir eksctl_download
-              aws configure set aws_access_key_id $AWS_ACCESS_KEY_ID
-              aws configure set aws_secret_access_key $AWS_SECRET_ACCESS_KEY
-              aws configure set aws_session_token $AWS_SESSION_TOKEN
-              aws configure set region $AWS_DEFAULT_REGION
-        - aws-eks/create-cluster:
-            cluster-name: << parameters.cluster-name >>
-            aws-region: $AWS_DEFAULT_REGION   
-            node-type: t2.micro
-            ssh-access: true
-            ssh-public-key: id_rsa.pub
- 
 # ----------------------------------------------------------------------------------------------------------------------------------------
 # Deploy the application from AWS ECR image to AWS EKS
 # ---------------------------------------------------------------------------------------------------------------------------------------
     deploy-application:
       executor: aws-eks/python3
-      parameters:
-        cluster-name:
-          description: |
-            Name of the EKS cluster
-          type: string
-        docker-image-name:
-          description: |
-            Name of the docker image to be deployed
-          type: string
-        version-info:
-          description: |
-            App version information
-          type: string
-        aws-region:
-          description: |
-            AWS region
-          type: string
-          default: "ap-south-1"
       steps:
         - checkout
         - aws-eks/update-kubeconfig-with-authenticator:
-            cluster-name: << parameters.cluster-name >>
+            cluster-name: udacity-cluster
             install-kubectl: true
-            aws-region: << parameters.aws-region >>
+            aws-region: $AWS_DEFAULT_REGION
         - kubernetes/create-or-update-resource:
             resource-file-path: "deployments/deployment.yml"
-            resource-name: deployment/capstone
+            resource-name: deployment/udacity
 
     test-application:
         executor: aws-eks/python3
-        parameters:
-          cluster-name:
-            description: |
-              Name of the EKS cluster
-            type: string
-          aws-region:
-            description: |
-              AWS region
-            type: string
-            default: ""
-          expected-version-info:
-            description: |
-              Expected app version (this is used for testing that the
-              correct version has been deployed)
-            type: string
         steps:
           - aws-eks/update-kubeconfig-with-authenticator:
-              cluster-name: << parameters.cluster-name >>
+              cluster-name: udacity-cluster
               install-kubectl: true
-              aws-region: << parameters.aws-region >>
+              aws-region: $AWS_DEFAULT_REGION
           - run:
               name: Wait for service to be ready
               command: |
@@ -175,101 +99,20 @@ jobs:
 
     set-loadbalancer:
         executor: aws-eks/python3
-        parameters:
-          cluster-name:
-            description: |
-              Name of the EKS cluster
-            type: string
-          aws-region:
-            description: |
-              AWS region
-            type: string
-            default: ""
-          expected-version-info:
-            description: |
-              Expected app version 
-            type: string
         steps:
           - checkout
           - aws-eks/update-kubeconfig-with-authenticator:
-              cluster-name: << parameters.cluster-name >>
+              cluster-name: udacity-cluster
               install-kubectl: true
-              aws-region: << parameters.aws-region >>
-          - kubernetes/create-or-update-resource:            
-              resource-file-path: "deployments/loadbalancer.yml"
-              resource-name: deployment/capstone              
+              aws-region: $AWS_DEFAULT_REGION
+          - kubernetes/create-or-update-resource:
+            resource-file-path: "deployments/loadbalancer.yml"
+            resource-name: deployment/udacity         
           - run:
               name: Wait for LB to be ready
               command: |         
-                kubectl get service/capstone-service-loadbalancer     
+                kubectl get service/udacity-service-loadbalancer     
               
-# ------------------------------------------------------------------------------------------------------------------------------------
-#   Rollback the deployment of the application and run only when needed
-# ------------------------------------------------------------------------------------------------------------------------------------
-    
-    undeploy-application:
-      executor: aws-eks/python3
-      parameters:
-        cluster-name:
-          description: |
-            Name of the EKS cluster
-          type: string
-        aws-region:
-          description: |
-            AWS region
-          type: string
-          default: ""
-      steps:
-        - aws-eks/update-kubeconfig-with-authenticator:
-            cluster-name: << parameters.cluster-name >>
-            install-kubectl: true
-            aws-region: << parameters.aws-region >>
-        - kubernetes/delete-resource:
-            resource-types: "deployment,service"
-            label-selector: "app=capstone"
-            wait: true
-        - run:
-            name: Check on pod status
-            command: |
-              kubectl get pods
-              
-              
-# ----------------------------------------------------------------------------------------------------------------------------------------
-# Delete cluster, installing eks again to mitigate orbs error
-# ----------------------------------------------------------------------------------------------------------------------------------------
-
-    delete-cluster:   
-      executor: aws-eks/python3
-      parameters:
-        cluster-name:
-          description: |
-            Name of the EKS cluster
-          type: string
-      steps:
-        - checkout
-        - aws-eks/install-aws-iam-authenticator:
-            release-tag: ''
-        - run:
-            name: Install the eksctl tool
-            command: |
-              if which eksctl > /dev/null; then
-              echo "eksctl is already installed"
-              exit 0
-              fi
-              mkdir -p eksctl_download
-              curl --silent --location --retry 5 "https://github.com/weaveworks/eksctl/releases/latest/download/eksctl_$(uname -s)_amd64.tar.gz" | tar xz -C eksctl_download
-              chmod +x eksctl_download/eksctl
-              SUDO=""
-              if [ $(id -u) -ne 0 ] && which sudo > /dev/null ; then
-              SUDO="sudo"
-              fi
-              $SUDO mv eksctl_download/eksctl /usr/local/bin/
-              rmdir eksctl_download
-        - aws-eks/delete-cluster:
-            cluster-name: << parameters.cluster-name >>
-            aws-region: $AWS_DEFAULT_REGION
-            wait: true            
-            
 # ----------------------------------------------------------------------------------------------------------------------------------------
 # Start of Workflow
 # ----------------------------------------------------------------------------------------------------------------------------------------
@@ -281,64 +124,29 @@ workflows:
       
       - build-docker-image:
           requires:
-            - "run-lint"
+            - run-lint
       
       - push-docker-image:
           requires:
-            - "build-docker-image"
-            
-      - aws-ecr/build-and-push-image:
-   
-          name: build-and-push-image-ecr
-          account-url: AWS_ECR_URL
-          region: AWS_DEFAULT_REGION
-          create-repo: true
-          repo: eks_orb_capstone_project
-          dockerfile: Dockerfile
-          path: ~/project/
- #         tag: ${CIRCLE_SHA1}
-          tag: latest
-          requires:
-            - push-docker-image
-              
-      - setup-cluster:
-          cluster-name: eks-orb-capstone-project-deployment-${CIRCLE_WORKFLOW_ID:0:7}
-          requires:
-            - build-and-push-image-ecr
+            - build-docker-image
       
+      - aws-ecr/build-and-push-image:
+            docker-login: true
+            dockerhub-password: $DOCKER_PASSWORD
+            dockerhub-username: $DOCKER_USERNAME
+            repo: udacity
+            requires:
+              - push-docker-image
+
       - deploy-application:
-          cluster-name: eks-orb-capstone-project-deployment-${CIRCLE_WORKFLOW_ID:0:7}
-          aws-region: $AWS_DEFAULT_REGION
-   #       docker-image-name: "${AWS_ECR_URL}/eks_orb_capstone_project:${CIRCLE_SHA1}"
-          docker-image-name: "${AWS_ECR_URL}/eks_orb_capstone_project:latest"
-          version-info: "${CIRCLE_SHA1}"
-          requires:
-            - setup-cluster
+            requires:
+              - aws-ecr/build-and-push-image
       
       - test-application:
-          cluster-name: eks-orb-capstone-project-deployment-${CIRCLE_WORKFLOW_ID:0:7}
-          aws-region: $AWS_DEFAULT_REGION
-  #        expected-version-info: "${CIRCLE_SHA1}"
-          expected-version-info: latest
           requires:
             - deploy-application
             
             
       - set-loadbalancer:
-          cluster-name: eks-orb-capstone-project-deployment-${CIRCLE_WORKFLOW_ID:0:7}
-          aws-region: $AWS_DEFAULT_REGION
-  #        expected-version-info: "awsdevops"
-          expected-version-info: latest  
           requires:
             - test-application
-            
-  #    - undeploy-application:
-  #        cluster-name: eks-orb-capstone-project-deployment-${CIRCLE_WORKFLOW_ID:0:7}
-  #        aws-region: $AWS_DEFAULT_REGION
-  #        requires:
-  #          - test-application
-            
-  #    - delete-cluster:
-  #        cluster-name: eks-orb-capstone-project-deployment-${CIRCLE_WORKFLOW_ID:0:7}
-  #        requires:
-  #          - undeploy-application

@@ -20,19 +20,20 @@
 - AWS_SESSION_TOKEN	
 - DOCKER_PASSWORD
 - DOCKER_USERNAME
+- 
 
 # Create EKS cluster  
 - Create EKS role name eksClusterRole: https://docs.aws.amazon.com/eks/latest/userguide/service_IAM_role.html#create-service-role
 
 - Create EKS Cluster name: aws-devops
 # Pipeline steps
-  - checkout
-  - build code
-  - test code
-  - build image
-  - tag image
-  - push image
-  - deploy
+- run-lint
+- build-docker-image
+- push-docker-image
+- build-and-push-image-ecr
+- deploy-application
+- test-application
+- set-loadbalancer
 
 
 

@@ -17,6 +17,6 @@ spec:
     spec:
       containers:
       - name: udacity
-        image: duongvcn/udacity:latest
+        image: udacity:latest
         ports:
           - containerPort: 80
