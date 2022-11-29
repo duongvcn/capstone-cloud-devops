@@ -1,0 +1,2 @@
+1. Link github: https://github.com/duongvcn/capstone-cloud-devops
+2. EKS external SVC:
