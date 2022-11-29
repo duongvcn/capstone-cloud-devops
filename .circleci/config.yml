@@ -68,7 +68,7 @@ jobs:
         - run:
             name: Deploy application with kubernetes
             command: |
-              # eksctl create cluster --name cluster-devops --region=us-west-2
+              eksctl create cluster --name cluster-devops --region=us-west-2
               aws sts get-caller-identity
               aws eks update-kubeconfig --name cluster-devops --region us-west-2
               kubectl get nodes
