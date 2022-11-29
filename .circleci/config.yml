@@ -88,7 +88,7 @@ jobs:
               aws configure set aws_secret_access_key $AWS_SECRET_ACCESS_KEY
               aws configure set aws_session_token $AWS_SESSION_TOKEN
               aws configure set region $AWS_DEFAULT_REGION
-         - run:
+        - run:
             name: Push image to ECR
             command: |
               aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 526532159872.dkr.ecr.us-east-1.amazonaws.com
