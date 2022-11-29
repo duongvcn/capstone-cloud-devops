@@ -82,36 +82,36 @@ jobs:
             resource-name: deployment/udacity
 
     test-application:
-        executor: aws-eks/python3
-        steps:
-          - aws-eks/update-kubeconfig-with-authenticator:
-              cluster-name: udacity-cluster
-              install-kubectl: true
-              aws-region: $AWS_DEFAULT_REGION
-          - run:
-              name: Wait for service to be ready
-              command: |
-                kubectl get pods
-                kubectl get services
+      executor: aws-eks/python3
+      steps:
+        - aws-eks/update-kubeconfig-with-authenticator:
+            cluster-name: udacity-cluster
+            install-kubectl: true
+            aws-region: $AWS_DEFAULT_REGION
+        - run:
+            name: Wait for service to be ready
+            command: |
+              kubectl get pods
+              kubectl get services
 # ----------------------------------------------------------------------------------------------------------------------------------  
 #  To create  LoadBalancer URL for the application as aws-eks orb is not creating LoadBalancer by default
 # ----------------------------------------------------------------------------------------------------------------------------------  
 
     set-loadbalancer:
-        executor: aws-eks/python3
-        steps:
-          - checkout
-          - aws-eks/update-kubeconfig-with-authenticator:
-              cluster-name: udacity-cluster
-              install-kubectl: true
-              aws-region: $AWS_DEFAULT_REGION
-          - kubernetes/create-or-update-resource:
-            resource-file-path: "deployments/loadbalancer.yml"
-            resource-name: deployment/udacity         
-          - run:
-              name: Wait for LB to be ready
-              command: |         
-                kubectl get service/udacity-service-loadbalancer     
+      executor: aws-eks/python3
+      steps:
+        - checkout
+        - aws-eks/update-kubeconfig-with-authenticator:
+            cluster-name: udacity-cluster
+            install-kubectl: true
+            aws-region: $AWS_DEFAULT_REGION
+        - kubernetes/create-or-update-resource:
+          resource-file-path: "deployments/loadbalancer.yml"
+          resource-name: deployment/udacity         
+        - run:
+            name: Wait for LB to be ready
+            command: |         
+              kubectl get service/udacity-service-loadbalancer     
               
 # ----------------------------------------------------------------------------------------------------------------------------------------
 # Start of Workflow
@@ -145,7 +145,6 @@ workflows:
       - test-application:
           requires:
             - deploy-application
-            
             
       - set-loadbalancer:
           requires:
