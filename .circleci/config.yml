@@ -60,11 +60,9 @@ jobs:
         - run:
             name: Build and Push Docker Image
             command: |
-              export TAG=latest
-              export IMAGE_NAME=udacity
-              docker build -t duongvcn/$IMAGE_NAME:$TAG .
+              docker build -t duongvcn/udacity:latest .
               docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD 
-              docker push duongvcn/$IMAGE_NAME:$TAG
+              docker push duongvcn/udacity:latest
 
 # ----------------------------------------------------------------------------------------------------------------------------------------
 # Deploy the application to EKS
@@ -87,20 +85,15 @@ jobs:
         - run:
             name: Deploy application with kubernetes
             command: |
-              #eksctl create cluster --name devops-cluster --region=us-east-1
+              eksctl create cluster --name d-cluster --region=us-east-1
               aws sts get-caller-identity
-              aws eks update-kubeconfig --name devops-cluster --region us-east-1
+              aws eks update-kubeconfig --name d-cluster --region us-east-1
               kubectl get nodes
-              #kubectl apply -f ./eks/deployment.yaml
-              #kubectl get pods
-              #kubectl create -f ./eks/loadbalancer.yaml
-              #sleep 20
-              kubectl get svc
-              Kubectl describe pod  | grep "image"
-              kubectl run duongvcn-udacity-app --image=duongvcn/udacity:latest --port=8080
+              kubectl apply -f ./eks/deployment.yaml
               kubectl get pods
-              kubectl port-forward duongvcn-udacity-app 8089:80
-
+              kubectl create -f ./eks/loadbalancer.yaml
+              sleep 20
+              kubectl get svc
 
 
 # ----------------------------------------------------------------------------------------------------------------------------------------
