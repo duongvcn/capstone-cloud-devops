@@ -85,6 +85,7 @@ jobs:
         - run:
             name: Deploy application with kubernetes
             command: |
+              eksctl delete cluster --region=us-east-1 --name=d-cluster
               eksctl create cluster --name d-cluster --region=us-east-1
               aws sts get-caller-identity
               aws eks update-kubeconfig --name d-cluster --region us-east-1
