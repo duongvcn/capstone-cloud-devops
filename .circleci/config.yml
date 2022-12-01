@@ -37,12 +37,19 @@ jobs:
         - run:
             name: install dependencies
             command: |
-              sudo wget -O /bin/hadolint https://github.com/hadolint/hadolint/releases/download/v1.16.3/hadolint-Linux-x86_64
-              sudo chmod +x /bin/hadolint
+              python3 -m venv venv
+              . venv/bin/activate
+              pip install -r requirements.txt
+              wget -O /bin/hadolint https://github.com/hadolint/hadolint/releases/download/v1.16.3/hadolint-Linux-x86_64 && chmod +x /bin/hadolint
+        - save_cache:
+          paths:
+            - ./venv
+          key: v1-dependencies-{{ checksum "requirements.txt" }}
         - run:
-            name: Run Lint
+            name: Run lint
             command: |
-              hadolint Dockerfile
+              . venv/bin/activate
+              make lint
               
 #  ------------------------------------------------------------------------------------------------------------------------------------------
 #  Build and Push the Dockerimage for the application 
@@ -85,9 +92,9 @@ jobs:
         - run:
             name: Deploy application with kubernetes
             command: |
-              eksctl create cluster --name d-cluster --region=$AWS_DEFAULT_REGION
+              eksctl create cluster --name uda-cluster --region=$AWS_DEFAULT_REGION
               aws sts get-caller-identity
-              aws eks update-kubeconfig --name d-cluster --region $AWS_DEFAULT_REGION
+              aws eks update-kubeconfig --name uda-cluster --region $AWS_DEFAULT_REGION
               kubectl get nodes
               kubectl apply -f ./eks/deployment.yaml
               kubectl get pods
