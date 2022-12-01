@@ -5,7 +5,7 @@ app = Flask(__name__, static_folder='app', static_url_path='')
 
 @app.route('/')
 def galaxy():
-    return app.send_static_file('index1.html')
+    return app.send_static_file('index.html')cc
 
 
 if __name__ == '__main__':
